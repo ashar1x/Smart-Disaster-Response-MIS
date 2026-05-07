@@ -9,10 +9,12 @@ const Finance = () => {
   const [summary, setSummary] = useState({});
   const [budgets, setBudgets] = useState([]);
   const [events, setEvents] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ amount: '', transaction_type: '', event_id: '' });
+  const [form, setForm] = useState({ amount: '', transaction_type: '', event_id: '', warehouse_id: '', resource_id: '', quantity: '' });
   const [msg, setMsg] = useState({ text: '', type: '' });
 
   useEffect(() => { fetchData(); }, [filterType]);
@@ -22,16 +24,20 @@ const Finance = () => {
     try {
       let url = '/finance/transactions';
       if (filterType) url += `?type=${filterType}`;
-      const [txRes, sumRes, budgetRes, evRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get(url),
         api.get('/finance/summary'),
         api.get('/finance/budgets'),
         api.get('/emergencies/events'),
+        api.get('/resources/warehouses'),
+        api.get('/resources/'),
       ]);
-      setTransactions(txRes.data);
-      setSummary(sumRes.data);
-      setBudgets(budgetRes.data);
-      setEvents(evRes.data);
+      setTransactions(results[0].status === 'fulfilled' ? (results[0].value.data || []) : []);
+      setSummary(results[1].status === 'fulfilled' ? (results[1].value.data || {}) : {});
+      setBudgets(results[2].status === 'fulfilled' ? (results[2].value.data || []) : []);
+      setEvents(results[3].status === 'fulfilled' ? (results[3].value.data || []) : []);
+      setWarehouses(results[4].status === 'fulfilled' ? (results[4].value.data || []) : []);
+      setResources(results[5].status === 'fulfilled' ? (results[5].value.data || []) : []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -44,11 +50,14 @@ const Finance = () => {
         amount: parseFloat(form.amount),
         transaction_type: form.transaction_type,
         event_id: form.event_id ? parseInt(form.event_id) : null,
+        warehouse_id: form.warehouse_id ? parseInt(form.warehouse_id) : null,
+        resource_id: form.resource_id ? parseInt(form.resource_id) : null,
+        quantity: form.quantity ? parseInt(form.quantity) : null,
         made_by_user: user?.user_id || null,
         made_by_donor: null,
       });
       setMsg({ text: 'Financial request submitted for approval.', type: 'success' });
-      setForm({ amount: '', transaction_type: '', event_id: '' });
+      setForm({ amount: '', transaction_type: '', event_id: '', warehouse_id: '', resource_id: '', quantity: '' });
       setShowForm(false);
       await fetchData(); // refresh everything immediately
     } catch (err) {
@@ -123,6 +132,38 @@ const Finance = () => {
                       ))}
                     </select>
                   </div>
+                  {form.transaction_type === 'Procurement' && (
+                    <>
+                      <div className="form-group">
+                        <label>Warehouse *</label>
+                        <select value={form.warehouse_id} onChange={e => setForm({ ...form, warehouse_id: e.target.value })} required>
+                          <option value="">Select warehouse</option>
+                          {warehouses.map(w => (
+                            <option key={w.warehouse_id} value={w.warehouse_id}>
+                              {w.warehouse_name} ({w.city})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Resource *</label>
+                        <select value={form.resource_id} onChange={e => setForm({ ...form, resource_id: e.target.value })} required>
+                          <option value="">Select resource</option>
+                          {resources.map(r => (
+                            <option key={r.resource_id} value={r.resource_id}>
+                              {r.resource_name} ({r.resource_type})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Quantity *</label>
+                        <input type="number" min="1" value={form.quantity}
+                          onChange={e => setForm({ ...form, quantity: e.target.value })}
+                          placeholder="e.g. 100" required />
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button type="submit" className="btn btn-primary">Submit for Approval</button>
               </form>

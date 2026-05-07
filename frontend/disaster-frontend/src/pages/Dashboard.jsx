@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = ['#e8460a', '#ef4444', '#eab308', '#22c55e', '#3b82f6'];
 
@@ -16,6 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState({ emergencies: 0, activeTeams: 0, donations: 0, pending: 0 });
   const [byType, setByType] = useState([]);
@@ -28,23 +30,25 @@ const Dashboard = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [reportsRes, teamsRes, summaryRes, pendingRes, inventoryRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/emergencies/reports'),
         api.get('/teams'),
         api.get('/finance/summary'),
         api.get('/approvals?status=Pending'),
         api.get('/resources/inventory'),
       ]);
-      const reports = reportsRes.data || [];
-      const teams = teamsRes.data || [];
-      const summary = summaryRes.data || {};
-      const inventory = inventoryRes.data || [];
+
+      const reports = results[0].status === 'fulfilled' ? (results[0].value.data || []) : [];
+      const teams = results[1].status === 'fulfilled' ? (results[1].value.data || []) : [];
+      const summary = results[2].status === 'fulfilled' ? (results[2].value.data || {}) : {};
+      const pendingResData = results[3].status === 'fulfilled' ? (results[3].value.data || []) : [];
+      const inventory = results[4].status === 'fulfilled' ? (results[4].value.data || []) : [];
 
       setCards({
         emergencies: reports.length,
         activeTeams: teams.filter(t => ['Assigned', 'Busy'].includes(t.availability_status)).length,
         donations: parseFloat(summary.total_donations || 0),
-        pending: (pendingRes.data || []).length,
+        pending: pendingResData.length,
       });
 
       const typeMap = {};
@@ -93,6 +97,13 @@ const Dashboard = () => {
             {new Date().toLocaleString()}
           </span>
         </div>
+
+        {user?.role === 'Warehouse Manager' && user?.warehouse && (
+          <div className="alert alert-info" style={{ marginBottom: 20, padding: 16, backgroundColor: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid #3b82f6', borderRadius: 4 }}>
+            <span style={{ color: '#3b82f6', fontWeight: 600 }}>Assigned Warehouse: </span>
+            <span>{user.warehouse.warehouse_name} ({user.warehouse.city})</span>
+          </div>
+        )}
 
         <div className="stat-grid">
           <div className="stat-card">

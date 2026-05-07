@@ -6,13 +6,18 @@ const Navbar = ({ active }) => {
 
   const links = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/emergencies', label: 'Emergencies' },
-    { href: '/resources', label: 'Resources' },
-    { href: '/teams', label: 'Teams' },
-    { href: '/hospitals', label: 'Hospitals' },
-    ...(['Administrator', 'Finance Officer'].includes(user?.role)
+    ...(['Administrator', 'Emergency Operator', 'Field Officer'].includes(user?.role)
+      ? [{ href: '/emergencies', label: 'Emergencies' }] : []),
+    ...(['Administrator', 'Warehouse Manager', 'Field Officer'].includes(user?.role)
+      ? [{ href: '/resources', label: 'Resources' }] : []),
+    ...(['Administrator', 'Emergency Operator', 'Field Officer'].includes(user?.role)
+      ? [{ href: '/teams', label: 'Teams' }] : []),
+    ...(['Administrator', 'Emergency Operator'].includes(user?.role)
+      ? [{ href: '/hospitals', label: 'Hospitals' }] : []),
+    ...(['Administrator', 'Finance Officer', 'Warehouse Manager'].includes(user?.role)
       ? [{ href: '/finance', label: 'Finance' }] : []),
     { href: '/approvals', label: 'Approvals' },
+    ...(user?.role === 'Administrator' ? [{ href: '/audit', label: 'Audit Log' }] : []),
   ];
 
   return (

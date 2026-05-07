@@ -12,6 +12,7 @@ import Teams from './pages/Teams';
 import Hospitals from './pages/Hospitals';
 import Finance from './pages/Finance';
 import Approvals from './pages/Approvals';
+import AuditLog from './pages/AuditLog';
 
 function App() {
   return (
@@ -69,11 +70,11 @@ function App() {
             }
           />
 
-          {/* Finance — restricted to Finance Officer and Administrator only */}
+          {/* Finance — restricted to Finance Officer, Administrator and Warehouse Manager */}
           <Route
             path="/finance"
             element={
-              <ProtectedRoute allowedRoles={['Administrator', 'Finance Officer']}>
+              <ProtectedRoute allowedRoles={['Administrator', 'Finance Officer', 'Warehouse Manager']}>
                 <Finance />
               </ProtectedRoute>
             }
@@ -84,6 +85,16 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['Administrator', 'Emergency Operator', 'Field Officer', 'Warehouse Manager', 'Finance Officer']}>
                 <Approvals />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Audit Log — restricted to Administrator only */}
+          <Route
+            path="/audit"
+            element={
+              <ProtectedRoute allowedRoles={['Administrator']}>
+                <AuditLog />
               </ProtectedRoute>
             }
           />

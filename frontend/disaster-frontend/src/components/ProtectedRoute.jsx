@@ -10,19 +10,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Logged in but wrong role — redirect to unauthorized page
+  // Logged in but wrong role — redirect to dashboard silently instead of showing access denied screen
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You do not have permission to view this page.</p>
-          <a href="/dashboard" className="text-blue-500 underline mt-4 block">
-            Return to Dashboard
-          </a>
-        </div>
-      </div>
-    );
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
