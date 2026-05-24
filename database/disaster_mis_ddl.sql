@@ -1,4 +1,4 @@
-CREATE DATABASE DisasterResponseDB
+
 
 USE DisasterResponseDB
 
